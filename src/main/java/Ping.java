@@ -41,7 +41,7 @@ public class Ping {
         } else {
             int second = timeOut / 1000;
             // Linux命令如下  -c多少次 -w多少秒
-            pingCommand = "ping - c " + pingTimes + " - w " + second + ipAddress;
+            pingCommand = "ping -c " + pingTimes + " -w " + second + "   "+ ipAddress;
         }
 
 
