@@ -1,5 +1,6 @@
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,9 +14,13 @@ public class Ping {
     private static Logger logger = LoggerFactory.getLogger(Ping.class);
 
 
-    public static void main(String[] args) {
-        boolean ping = ping("121.69.49.235", 1, 5000);
-        System.out.println(ping);
+    public static void main(String[] args) throws InterruptedException {
+        for (int i = 0; i <1000 ; i++) {
+            boolean ping = ping("121.69.49.235", 1, 5000);
+            System.out.println(ping);
+            Thread.sleep(1000);
+        }
+
     }
 
     public static boolean ping(String ipAddress) throws Exception {
@@ -25,6 +30,7 @@ public class Ping {
     }
 
     public static boolean ping(String ipAddress, int pingTimes, int timeOut) {
+        MDC.put("sift","ping");
         BufferedReader in = null;
         Runtime r = Runtime.getRuntime();
         String osName = System.getProperty("os.name");
