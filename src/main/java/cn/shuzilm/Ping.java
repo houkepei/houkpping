@@ -1,3 +1,5 @@
+package cn.shuzilm;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -6,6 +8,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,11 +21,17 @@ public class Ping {
 
 
     public static void main(String[] args) throws InterruptedException {
-        for (int i = 0; i <1000 ; i++) {
-            boolean ping = ping("121.69.49.235", 1, 5000);
-            System.out.println(ping);
-            Thread.sleep(1000);
-        }
+
+        AdxIplistUtil.getInstance();
+        List ipBlacklist = AdxIplistUtil.getIplist();
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+            for (Object o : ipBlacklist) {
+                String[] split = o.toString().split("\t");
+                String adxName = split[0];
+                String ipAddress = split[1];
+                ping(adxName, ipAddress, 1, 2000);
+            }
+        },0, 10, TimeUnit.MINUTES);
 
     }
 
@@ -29,8 +41,8 @@ public class Ping {
         return status;
     }
 
-    public static boolean ping(String ipAddress, int pingTimes, int timeOut) {
-        MDC.put("sift","ping");
+    public static boolean ping(String adxName, String ipAddress, int pingTimes, int timeOut) {
+        MDC.put("sift", "ping");
         BufferedReader in = null;
         Runtime r = Runtime.getRuntime();
         String osName = System.getProperty("os.name");
@@ -41,7 +53,7 @@ public class Ping {
         } else {
             int second = timeOut / 1000;
             // Linux命令如下  -c多少次 -w多少秒
-            pingCommand = "ping -c " + pingTimes + " -w " + second + "   "+ ipAddress;
+            pingCommand = "ping -c " + pingTimes + " -w " + second + "   " + ipAddress;
         }
 
 
@@ -59,6 +71,16 @@ public class Ping {
             // 逐行检查输出,计算类似出现=23ms TTL=62字样的次数
             while ((line = in.readLine()) != null) {
                 logger.debug("line:{}", line);
+                if (line.contains("time=")){
+                    String[] split = line.split("time=");
+                    MDC.put("phoenix","success");
+                    logger.debug("{}\t{}\t{}\t{}\t", LocalDateTime.now().toString(),adxName,ipAddress,split[1]);
+                    MDC.remove("phoenix");
+                }else {
+                    MDC.put("phoenix","error");
+                    logger.debug("{}\t{}\t{}\t{}\t", LocalDateTime.now().toString(),adxName,ipAddress,line);
+                    MDC.remove("phoenix");
+                }
                 connectedCount += getCheckResult(line);
             }
             // 如果出现类似=23ms TTL=62这样的字样,出现的次数=测试次数则返回真
